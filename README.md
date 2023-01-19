@@ -94,7 +94,7 @@ The second method is called normalized cross-correlation (NCC), which scores ima
 
 ![](images/test_10_Harvesters_NCC_Crop.gif)
 
-![](images/NCC.png)
+![](images/ncc_formula.png)
 
 After implementation, I achieved better results with more correct alignments.  However, certain images (ie. the “Emir” image) continued to present problems and was not able to be aligned.  All other images were successfully aligned nonetheless. 
 
@@ -110,8 +110,6 @@ In step 3, it was determined that the NCC method produced the most accurately al
 
 Structurally, an image pyramid exists as a series of downsampled images that represent progressively lower resolution versions of a larger target image.  To situate this in space, one can imagine the smallest and lowest resolution image at the top of the pyramid and the largest and highest resolution image at the bottom.  A series of other image copies exist in between and reduce in size and resolution as they travel up the pyramid.  Image pyramids are unique as they allow typical process heavy functions to be quickly carried out on the smallest image, with results being upsampled and applied to the largest image.  The benefit of this is reduced process time.  However, the results of these processes carried out on the smallest images are less precise due to their lower resolution.  To achieve more precision, one can move down the pyramid and carry out these processes on higher resolution images, thus increasing precision.  However, when operated in conjunction in a recursive manner, the results of one layer can be shared amongst the rest of the pyramid layers, thus incrementally increasing precision overall with the largest gains achieved  in the smallest and  fastest layers and the smallest and more precise gains being achieved in the largest.
 
-![](images/NCC.png)
-
 <br>
 
 ## Implementation
@@ -119,6 +117,8 @@ Structurally, an image pyramid exists as a series of downsampled images that rep
 <br>
 
 For this study, Method 2: NCC was determined to produce the best colorization results.  In combination with Image Pyramiding, we were able to apply this method to efficiently and rapidly colorize the largest full-size images of the  Prokudin-Gorskii Photo Collection.
+
+### Jupyter Notebooks
 
 A notebook implimentation of my approach can be found here.
 
