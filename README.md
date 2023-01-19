@@ -137,7 +137,7 @@ Using the NCC method in combination with image pyramiding, I was able to coloriz
 
 <br>
 
-![](images/results.png)
+![](images/results_2.png)
 
 <br>
 
