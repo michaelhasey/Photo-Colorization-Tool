@@ -1,14 +1,14 @@
-# Image Classification Neural Network from Scratch
+# Photo Colorization Tool
 
 <br>
 
-![](images/logo.png)
+![](images/process_banner.png)
 
 <br>
 
 ## About 
 
-A custom, from-scratch implementation of an image classification neural network using Adagrad, a variant of stochastic gradient descent, a sigmoid activation function hidden layer, and a softmax output layer
+This study proposes a computational method to autonomously colourize black and white photograph within the Prokudin-Gorskii Photo Collection using image processing techniques. 
 
 ## Project Page
 
@@ -17,7 +17,7 @@ An expanded description of this model implimentation can be found on its project
 <br>
 
 ```
-www.michaelhasey.com/neural-network-from-scratch
+https://www.michaelhasey.com/prokudin-gorskii-colorization-algorithm
 ```
 
 ## Table of Contents
@@ -39,13 +39,9 @@ www.michaelhasey.com/neural-network-from-scratch
 
 <br>
 
-The neural network shown below is representation of the image classification neural network built from scratch for this project.  It is made up of three layers; an input layer, a hidden layer, and an output layer.  Within each layer are a combination of neurons, each representing a single numeric value.  The overall goal of the neural network is to predict whether a given image is of an automobile, airplane, ship or frog.  This is done by abstracting images into numeric values and identifying any consistent relationships between the  configuration of these values and the images subject matter.  For example, identifying patterns of pixel values that are present amoung all images of frogs, ie. the color green, or two large black circles representing eyes.  Once these patterns are learned, neural networks can accurately predict the class of an image.   
-
-This neural network in particular was trained to learn and correctly predict whether an image is of a frog, airplane, automobile or ship.
-
-<br>
-
-![](images/network_all.png)
+The Prokudin-Gorskii Photo Collection are a series of black and white photos of the Russian Empire taken by Sergei Mikhailovich Prokudin-Goirskii in the early 20th century.  In addition to being grayscale, each photograph is in fact a montage of three copies of the same image stacked one above the other.  Each copy within the montage represents one of the three channels of the RGB color spectrum.  The images are stacked with the blue channel image on top,  the green channel image in the middle, and the red channel on the bottom.  
+ 
+The aim of this study was to use image processing techniques to autonomously and efficiently split the image into its three parts, align and stack them correctly to produce a colour image, and apply efficient coding methodologies and techniques such as image pyramiding to complete this task in a very short period of time when applied to very large images.
 
 <br>
 
@@ -53,67 +49,68 @@ This neural network in particular was trained to learn and correctly predict whe
 
 <br>
 
-A subset of a standard Computer Vision dataset, [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html) was used to both train, validate and test the neural network algorithm. The data includes color images of various vehicles and animals.  The specific subset used includes black and white images of the 4 classes automobile, bird, frog, ship. 500 samples were used for training and 100 were used for validation and testing. 
+The dataset includes various images within the Prokudin-Gorski Photo Collection.  As described above, each photo is in the form of a montage of three copies of the same image.  Each representing one channel of the RGB spectrum.  Each image is in .tif format.
 
 <br>
 
-![](images/data_2.png)
+![](images/data.png)
 
 <br>
 
-#### File Format
-
-The image dataset has been formatted into 2 csv files.  One for the training set (data/small_train.csv - 500 samples) and one for the validation set (data/small_val.csv - 100 samples).  Within each CSV file, each row represents a single image with each one of the 1025 columns representing individual pixel values within that particular 32 x 32 image.  Though data was pre-formatted, new images can easily be transformed into this format.  However, this format conversion technique is not included in the scope of this project.
+An example image is included and can be found here: 
 
 
 ```
-data/small_train.csv
-data/small_val.csv
+data/village.tif
 ```
 
+<br>
 
-## Model Architecture
+
+## Approach
 
 <br>
 
 
-#### The Input Layer
+### Method 1: Sum of Square Differences (SSD)
 
-The first layer of the neural network is called the input layer, and is comprised of 1025 neurons, each representing one pixel value of a 1025 pixel grayscale image.  The input image can be of either a car, bird, frog or ship. 
+The first and simplest method is finding the sum of square differences (SSD) - also known as the L2 norm - between the images.  This method simply compares the average sum of pixel values between two images and returns the difference.  The SSD formula is shown below. 
 
-<br>
+![](images/ssd.png)
 
-![](images/network_1.png)
+As a result, a SSM value of 0 means that the images compared are the same and aligned perfectly.   And thus, lower SSM values correspond with images that are more aligned, and higher SSM values correspond with images that are less aligned.  In order to find the lowest SSM value and best alignment location, I used the numpy function np.roll to shift single images within a range of possible locations.   These possible locations are confined within a pixel range specified by the user.  For example a 15x15 pixel range, would result in the image being slightly shifted 225 times within that range.  Once shifted, the SSD value would be calculated again.  Once all shifts have been made, the shift with the lowest SSD value is chosen and applied to the image in order to achieve the best shift and thus, alignment.  
 
-<br>
+![](images/test_8_Icon_Green_Shift_Crop_5percent.gif)
 
-#### The Hidden Layer
+In this study, both the green and red channels were shifted via this method to align with the blue channel.  Though this method worked well with some images (see image to right), I soon discovered that it was fairly inconsistent and slow with many misaligned image results (see below). 
 
- The next layer is called the hidden layer, and is made up of a varying number of neurons which can be determined by the user.  As evident in the above illustration, there are two neurons side-by-side in this layer.  The neurons to the left, denoted by the letter “a”, represent a linear combination of weights from each individual neuron from the previous input layer.  The neurons to the right, denoted by the letter “z” take in, as input, the output of the preceding linear combination layer.  Overall, the hidden layer, greatly reduces the number of numeric variables, from 1025 to some much smaller number, therefore abstracting the original image representation.
-
-<br>
-
-![](images/network_2.png)
+![](images/misaligned.png)
 
 <br>
 
-#### The Output Layer
+### Method 2: Normalized Cross Correlation (NCC)
 
-The final layer is called the output layer, and takes in, as input, the output of the preceding activation layer which is part of the hidden layer as previously described.  Again, there is both a linear combination and activation layer that further reduces the number of numeric variables to match the number of classes the network is trying to classify.  In this case, 4.   Finally, a prediction is made, as to what class the image belongs to.  This is done by an argmax function which bases its prediction of the largest of the four “y” activation values within the output layer.  A loss score is then determined based on whether the prediction was correct or incorrect.
+The second method is called normalized cross-correlation (NCC), which scores image alignment via the dot product between two normalized vectors.  Like the SSD method, I aligned the Red and Green channels with the blue channels by cycling through a range of possible displacements by using the np.roll. (np.roll() is a numpy function that shifts array elements, in this case image array elements, along a specified axis in order to determine whether a new alignment is better aligned to the base image via the SSD or NCC method.)   However, opposite to SSD a higher score indicates better alignment while a low score indicates less alignment.  The NCC formula is shown below
 
-<br>
+![](images/test_10_Harvesters_NCC_Crop.gif)
 
-![](images/network_3.png)
+![](images/NCC.png)
 
-<br>
+After implementation, I achieved better results with more correct alignments.  However, certain images (ie. the “Emir” image) continued to present problems and was not able to be aligned.  All other images were successfully aligned nonetheless. 
 
-#### Bringing It All Together
-
-By abstracting an original image from 1025 numeric values representing pixels to, say, 24 values in the hidden layer, and finally, just four values in the output layer, complex imagery can be reduced into simple numeric representations.  By doing this thousands of times to similar imagery, say various images of cars, the neural network can learn the general numeric-based representational patterns that describe images of cars.  It can also do this for the other categories, and determine the numeric value patterns that describe images of frogs, or airplanes.  As a result, the more images the network takes in as input and numerically abstracts during the training stage, the better its predictions become.  In this way, the neural network can determine whether an image is a plane, frog, automobile, or ship.
+![](images/NCC.png)
 
 <br>
 
-![](images/network_all.png)
+### Processing Large Images Quickly
+
+In step 3, it was determined that the NCC method produced the most accurately aligned images.  Thus, I decided to apply the NCC algorithm to the full size image plates.  However, I soon realized that the sheer size of the image (3741x9732 pixels, 83.6 MB) compared to the smaller test images previously used (923x2400 pixels, 4.5 MB) was extremely taxing on the algorithm and slowed the alignment process down immensely. To speed up the alignment process for large, full-size images, I constructed a recursive “Image Pyramid” framework which dramatically reduced processing time to around 6 seconds per image.  
+
+![](images/pyramid.png)
+
+Structurally, an image pyramid exists as a series of downsampled images that represent progressively lower resolution versions of a larger target image.  To situate this in space, one can imagine the smallest and lowest resolution image at the top of the pyramid and the largest and highest resolution image at the bottom.  A series of other image copies exist in between and reduce in size and resolution as they travel up the pyramid.  Image pyramids are unique as they allow typical process heavy functions to be quickly carried out on the smallest image, with results being upsampled and applied to the largest image.  The benefit of this is reduced process time.  However, the results of these processes carried out on the smallest images are less precise due to their lower resolution.  To achieve more precision, one can move down the pyramid and carry out these processes on higher resolution images, thus increasing precision.  However, when operated in conjunction in a recursive manner, the results of one layer can be shared amongst the rest of the pyramid layers, thus incrementally increasing precision overall with the largest gains achieved  in the smallest and  fastest layers and the smallest and more precise gains being achieved in the largest.
+
+![](images/NCC.png)
 
 <br>
 
@@ -121,79 +118,13 @@ By abstracting an original image from 1025 numeric values representing pixels to
 
 <br>
 
-### Implementation Details
+For this study, Method 2: NCC was determined to produce the best colorization results.  In combination with Image Pyramiding, we were able to apply this method to efficiently and rapidly colorize the largest full-size images of the  Prokudin-Gorskii Photo Collection.
 
-<br>
-
-#### Step 1: Definiing the Training Algorithm
-
-In order to train our neural network, stochastic gradient descent (SGD) was used. Stochastic gradient descent is an iterative method for optimizing the objective function, which is in this case is average Cross Entropy Loss over the training dataset. Optimizing this function allows the neural network to learn and improve prediction accuracy.
-The SGD algorithm I wrote was based on the sudo-code outline shown to the left, where “E” is the number of epochs and “y” is the learning rate. 
-
-<br>
-
-![](images/algorithm_1.png)
-
-<br>
-
-#### Step 2: Defining the Objective Function
-
-The objective function we will use for training the neural network is the average cross entropy over the training dataset as illustrated below.  To summarize, objective function calculates the overall loss, which can be used to determine the models accuracy when making predictions. A high loss means that accuracy is low, and a low loss means that the accuracy is high.  Therefore, the goal of the neural network is to reduce overall loss.
-
-<br>
-
-![](images/equation.png)
-
-<br>
-
-#### Step 3: Integrating the Forward & Backward Pass
-
-“Forward propagation (or forward pass) refers to the calculation and storage of intermediate variables (including outputs) for a neural network in order from the input layer to the output layer.” [1] “In simple terms, after each forward pass through a network, backpropagation performs a backward pass while adjusting the model’s parameters (weights and biases).” [2]. This adjusting of paramaters allows the network to reduce its loss via the objective function and increase its prediction accuracy. The Forward and Backward pass algorithms I wrote was based on the sudo-code outlines shown to the right. 
-
-<br>
-
-![](images/algorithm_3_4.png)
-
-<br>
-
-#### Step 4: Testing the Model
-
-When testing the model, the output is the most probable prediction for each input example. The testing algorithm I wrote was based on the sudo-code outline shown to the left.
-
-<br>
-
-![](images/algorithm_2.png)
-
-<br>
-
-### Command Line Arguments
-
-<br>
-
-When running model/neuralnet.py , the following command line arguments can be used.
+A notebook implimentation of my approach can be found here.
 
 ```
-<train input>:   path to the training input .csv file
-<validation input>:   path to the validation input .csv file
-<train out>:   path to output .labels (location where predicted training \
-image labels/classes should be written)
-<validation out>:   path to output .labels (location where predicted validation \
-image labels/classes should be written)
-<metrics out>:   path of the output .txt file (includes training & validation errors)
-<num epoch>:   integer specifying the number of times backpropogation loops through \
-all of the training data
-<hidden units>:   positive integer specifying the number of hidden units.
-<init flag>:   integer taking value 1 or 2 that specifies whether to use RANDOM or ZERO \
-initialization
-<learning rate>:   float value specifying the base learning rate for SGD with Adagrad.
-```
-<br>
-
-Below is an implimentation example
-
-```
-$ python3 neuralnet.py smallTrain.csv smallValidation.csv \
-smallTrain_out.labels smallValidation_out.labels smallMetrics_out.txt 2 4 2 0.1
+main_single_scale.ipynb (without image pyramiding)
+main_multi_scale.ipynb (with image pyramiding)
 ```
 
 <br>
@@ -202,15 +133,11 @@ smallTrain_out.labels smallValidation_out.labels smallMetrics_out.txt 2 4 2 0.1
 
 <br>
 
-An cross entropy loss objective function was used to determine model performance.  A high loss means that accuracy is low, and a low loss means that the accuracy is high.  Therefore, the goal of the neural network is to reduce overall loss.
+Using the NCC method in combination with image pyramiding, I was able to colorize large full-size photos within an average of just 6 seconds.
 
-```
-crossentropy loss (training set) = 1.383
-crossentropy loss (validation set) = 1.396
+<br>
 
-error rate (training set) = 0.728
-error rate (validation set) = 0.740
-```
+![](images/results.png)
 
 <br>
 
@@ -218,7 +145,7 @@ error rate (validation set) = 0.740
 
 <br>
 
-This project was completed as part of Carnegie Melon University's Machine Learning course 10 601.
+This project was completed as part of Carnegie Melon University's Learning Based Image Synthesis course 16 726 taught by Jun-Yan Zhu in Spring of 2021.
 
 ## Citation
 
@@ -228,7 +155,7 @@ If you find this project useful in your research, please consider citing:
 
 ``` 
 @misc{mhasey2021,
-    title={Neural Network From Scratch},
+    title={Photo Colorization Tool},
     author={Michael Hasey},
     year={2021},
 }
