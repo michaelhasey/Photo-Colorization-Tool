@@ -1,4 +1,4 @@
-# READ ME FILE
+# README FILE
 
 ## Assignment #1 - Colorizing the Projudin-Gorskii Photo Collection
 
